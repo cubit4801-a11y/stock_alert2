@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NEPSE Alert - Dashboard</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            display: block;
+            padding: 24px;
+            background: #f0f4f8;
+            min-height: 100vh;
+        }
+        .dashboard-container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, #0a2463, #1e5799);
+            color: white;
+            padding: 18px 28px;
+            border-radius: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 20px; color: white; margin: 0; }
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+        .datetime {
+            font-size: 13px;
+            color: rgba(255,255,255,0.85);
+            font-weight: 500;
+        }
+        .market-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+        }
+        .market-open { background: #00a651; color: white; }
+        .market-closed { background: #cc0000; color: white; }
+        .logout-btn {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            padding: 7px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+        /* NEPSE CARD */
+        .nepse-card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(10,36,99,0.07);
+        }
+        .nepse-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0a2463;
+            margin-bottom: 2px;
+        }
+        .nepse-subtitle {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 16px;
+        }
+        .graph-container {
+            position: relative;
+            height: 180px;
+            margin-bottom: 20px;
+        }
+
+        /* SUMMARY */
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .summary-box {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(10,36,99,0.06);
+        }
+        .summary-label {
+            font-size: 11px;
+            color: #888;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
+        }
+        .summary-value { font-size: 28px; font-weight: 700; }
+        .advanced { color: #00a651; }
+        .declined { color: #cc0000; }
+        .unchanged { color: #888; }
+
+        /* TURNOVER */
+        .turnover-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .turnover-box {
+            background: white;
+            border-radius: 12px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 8px rgba(10,36,99,0.06);
+        }
+        .turnover-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+        .turnover-value { font-size: 15px; font-weight: 700; color: #0a2463; }
+
+        /* BUTTONS */
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .add-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #0a2463, #1e5799);
+            color: white;
+            padding: 11px 22px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .add-btn:hover { background: linear-gradient(135deg, #1e5799, #2980b9); }
+        .green-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #00a651, #007a3d);
+            color: white;
+            padding: 11px 22px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .green-btn:hover { background: linear-gradient(135deg, #007a3d, #005a2d); }
+
+        /* STOCKS TABLE */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0a2463;
+            margin-bottom: 12px;
+        }
+        .table-card {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(10,36,99,0.07);
+            margin-bottom: 20px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        thead {
+            background: linear-gradient(135deg, #0a2463, #1e5799);
+            color: white;
+        }
+        thead th {
+            padding: 12px 14px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        tbody tr { border-bottom: 1px solid #f0f5ff; transition: background 0.2s; }
+        tbody tr:hover { background: #f8faff; }
+        tbody td { padding: 11px 14px; font-size: 13px; color: #333; }
+        .symbol-badge {
+            background: #e6f0ff;
+            color: #0a2463;
+            padding: 3px 9px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 12px;
+        }
+        .price-up { color: #00a651; font-weight: 700; }
+        .price-down { color: #cc0000; font-weight: 700; }
+        .price-neutral { color: #555; font-weight: 700; }
+        .change-up {
+            color: #00a651;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .change-down {
+            color: #cc0000;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .set-alert-btn {
+            background: linear-gradient(135deg, #0a2463, #1e5799);
+            color: white;
+            padding: 5px 11px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .set-alert-btn:hover { background: linear-gradient(135deg, #1e5799, #2980b9); }
+        .view-all-link {
+            display: block;
+            text-align: center;
+            padding: 12px;
+            color: #1e5799;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            border-top: 1px solid #f0f5ff;
+        }
+        .view-all-link:hover { background: #f8faff; }
+
+        /* ALERTS */
+        .alert-card {
+            background: white;
+            border: 1px solid #e8eef8;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(10,36,99,0.05);
+        }
+        .alert-card.triggered {
+            border-left: 4px solid #e65100;
+            background: #fff8f0;
+        }
+        .alert-symbol { font-size: 18px; font-weight: 700; color: #0a2463; }
+        .alert-name { font-size: 12px; color: #888; margin-top: 2px; }
+        .alert-triggered-time { font-size: 11px; color: #e65100; margin-top: 4px; }
+        .alert-price { font-size: 16px; font-weight: 700; color: #1e5799; }
+        .alert-type {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        .above { background: #e6f4ea; color: #006400; }
+        .below { background: #fce8e8; color: #cc0000; }
+        .status-badge {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 20px;
+            margin-left: 6px;
+        }
+        .status-active { background: #e6f4ea; color: #006400; }
+        .status-triggered { background: #fff3e0; color: #e65100; }
+        .delete-btn {
+            background: #fce8e8;
+            color: #cc0000;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .delete-btn:hover { background: #ffcccc; }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            color: #888;
+        }
+        .empty-state h3 { color: #0a2463; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+<div class="dashboard-container">
+
+    <!-- HEADER WITH DATE TIME -->
+    <div class="header">
+        <div>
+            <h1>📈 NEPSE Alert</h1>
+            <p style="color:rgba(255,255,255,0.6); font-size:12px; margin:4px 0 0 0;">
+                Welcome, {{ user.first_name }}!
+            </p>
+        </div>
+        <div class="header-right">
+            <div class="datetime">
+                🕐 {{ now|date:"M d, Y" }} | {{ now|time:"h:i A" }}
+            </div>
+            <span class="market-badge {% if is_open %}market-open{% else %}market-closed{% endif %}">
+                {% if is_open %}MARKET OPEN{% else %}MARKET CLOSED{% endif %}
+            </span>
+            <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div style="padding:10px 15px; border-radius:8px; margin-bottom:12px; background:#e6f4ea; color:#006400; font-size:13px;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- NEPSE INDEX GRAPH -->
+    <div class="nepse-card">
+        <div class="nepse-title">NEPSE Index</div>
+        <div class="nepse-subtitle">Nepal Stock Exchange · Today's Market Overview</div>
+        <div class="graph-container">
+            <canvas id="nepseChart"></canvas>
+        </div>
+    </div>
+
+    <!-- MARKET SUMMARY -->
+    {% if summary %}
+    <div class="summary-row">
+        <div class="summary-box">
+            <div class="summary-label">ADVANCED</div>
+            <div class="summary-value advanced">{{ summary.advanced }}</div>
+        </div>
+        <div class="summary-box">
+            <div class="summary-label">DECLINED</div>
+            <div class="summary-value declined">{{ summary.declined }}</div>
+        </div>
+        <div class="summary-box">
+            <div class="summary-label">UNCHANGED</div>
+            <div class="summary-value unchanged">{{ summary.unchanged }}</div>
+        </div>
+    </div>
+    <div class="turnover-row">
+        <div class="turnover-box">
+            <div class="turnover-label">Total Turnover (Rs.)</div>
+            <div class="turnover-value">{{ summary.total_turnover|floatformat:2 }}</div>
+        </div>
+        <div class="turnover-box">
+            <div class="turnover-label">Total Traded Shares</div>
+            <div class="turnover-value">{{ summary.total_shares }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- BUTTONS -->
+    <div class="btn-row">
+        <a href="{% url 'nepse_stocks' %}" class="green-btn">📈 View All NEPSE Stocks</a>
+        <a href="{% url 'add_alert' %}" class="add-btn">+ Add New Stock Alert</a>
+    </div>
+
+    <!-- TOP 20 STOCKS TABLE -->
+    <div class="section-title">
+    Today's Stock Prices — Top 20
+    {% if summary %}
+        <span style="font-size:12px; font-weight:400; color:#888; margin-left:8px;">
+            Data as of: {{ summary.last_trading_day }}
+        </span>
+    {% endif %}
+</div>
+<div class="table-card">
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Symbol</th>
+                <th>Company</th>
+                <th>LTP</th>
+                <th>Change</th>
+                <th>Change %</th>
+                <th>High</th>
+                <th>Low</th>
+                <th>Prev Close</th>
+                <th>Alert</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in top_stocks %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td><span class="symbol-badge">{{ stock.symbol }}</span></td>
+                <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    {{ stock.securityName }}
+                </td>
+                <td>
+                    {% if stock.change > 0 %}
+                        <span class="price-up">{{ stock.ltp }}</span>
+                    {% elif stock.change < 0 %}
+                        <span class="price-down">{{ stock.ltp }}</span>
+                    {% else %}
+                        <span class="price-neutral">{{ stock.ltp }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if stock.change > 0 %}
+                        <span class="change-up">▲ {{ stock.change }}</span>
+                    {% elif stock.change < 0 %}
+                        <span class="change-down">▼ {{ stock.change }}</span>
+                    {% else %}
+                        <span style="color:#888;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if stock.change_pct > 0 %}
+                        <span class="change-up">+{{ stock.change_pct }}%</span>
+                    {% elif stock.change_pct < 0 %}
+                        <span class="change-down">{{ stock.change_pct }}%</span>
+                    {% else %}
+                        <span style="color:#888;">0.00%</span>
+                    {% endif %}
+                </td>
+                <td>{{ stock.highPrice }}</td>
+                <td>{{ stock.lowPrice }}</td>
+                <td>{{ stock.previousDayClosePrice }}</td>
+                <td>
+                    <a href="{% url 'add_alert' %}?symbol={{ stock.symbol }}&name={{ stock.securityName }}&price={{ stock.ltp }}" class="set-alert-btn">
+                        + Alert
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'nepse_stocks' %}" class="view-all-link">
+        View All NEPSE Stocks →
+    </a>
+</div>
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Symbol</th>
+                    <th>Company</th>
+                    <th>Close Price</th>
+                    <th>Change</th>
+                    <th>Change %</th>
+                    <th>High</th>
+                    <th>Low</th>
+                    <th>Alert</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in top_stocks %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td><span class="symbol-badge">{{ stock.symbol }}</span></td>
+                    <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        {{ stock.securityName }}
+                    </td>
+                    <td>
+                        {% if stock.change > 0 %}
+                            <span class="price-up">NPR {{ stock.closePrice }}</span>
+                        {% elif stock.change < 0 %}
+                            <span class="price-down">NPR {{ stock.closePrice }}</span>
+                        {% else %}
+                            <span class="price-neutral">NPR {{ stock.closePrice }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if stock.change > 0 %}
+                            <span class="change-up">▲ {{ stock.change }}</span>
+                        {% elif stock.change < 0 %}
+                            <span class="change-down">▼ {{ stock.change }}</span>
+                        {% else %}
+                            <span style="color:#888;">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if stock.change_pct > 0 %}
+                            <span class="change-up">+{{ stock.change_pct }}%</span>
+                        {% elif stock.change_pct < 0 %}
+                            <span class="change-down">{{ stock.change_pct }}%</span>
+                        {% else %}
+                            <span style="color:#888;">0.00%</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ stock.highPrice }}</td>
+                    <td>{{ stock.lowPrice }}</td>
+                    <td>
+                        <a href="{% url 'add_alert' %}?symbol={{ stock.symbol }}&name={{ stock.securityName }}&price={{ stock.closePrice }}" class="set-alert-btn">
+                            + Alert
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{% url 'nepse_stocks' %}" class="view-all-link">
+            View All NEPSE Stocks →
+        </a>
+    </div>
+
+    <!-- YOUR ALERTS SECTION -->
+    <div class="section-title">Your Stock Alerts</div>
+
+    {% if alerts %}
+      {% for alert in alerts %}
+      <div class="alert-card {% if alert.status == 'triggered' %}triggered{% endif %}">
+        <div>
+          <div class="alert-symbol">
+            {{ alert.stock_symbol }}
+            <span class="status-badge {% if alert.status == 'active' %}status-active{% else %}status-triggered{% endif %}">
+              {{ alert.status }}
+            </span>
+          </div>
+          <div class="alert-name">{{ alert.stock_name }}</div>
+          {% if alert.status == 'triggered' %}
+            <div class="alert-triggered-time">
+              🔔 Triggered at {{ alert.triggered_at|date:"Y-m-d H:i" }}
+            </div>
+          {% endif %}
+        </div>
+        <div style="text-align:center;">
+          <div class="alert-price">NPR {{ alert.target_price }}</div>
+          <span class="alert-type {{ alert.alert_type }}">
+            {% if alert.alert_type == 'above' %}↑ Above{% else %}↓ Below{% endif %}
+          </span>
+        </div>
+        <a href="{% url 'delete_alert' alert.id %}" class="delete-btn">Delete</a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <h3>No Alerts Yet!</h3>
+        <p>Use the + Alert button on any stock above to set your first alert!</p>
+      </div>
+    {% endif %}
+
+</div>
+
+<!-- CHART JS -->
+<script>
+const ctx = document.getElementById('nepseChart').getContext('2d');
+const labels = ['11:00','11:15','11:30','11:45','12:00','12:15','12:30',
+                 '12:45','13:00','13:15','13:30','13:45','14:00','14:15',
+                 '14:30','14:45','15:00'];
+const data = [2780,2778,2790,2805,2795,2788,2775,2770,2765,2760,2758,2755,2752,2750,2748,2750,2757];
+const gradient = ctx.createLinearGradient(0, 0, 0, 180);
+gradient.addColorStop(0, 'rgba(30, 87, 153, 0.3)');
+gradient.addColorStop(1, 'rgba(30, 87, 153, 0.0)');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'NEPSE Index',
+            data: data,
+            borderColor: '#1e5799',
+            borderWidth: 2,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                backgroundColor: '#0a2463',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                padding: 10,
+                displayColors: false,
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { font: { size: 10 }, color: '#aaa', maxTicksLimit: 8 }
+            },
+            y: {
+                grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+                ticks: { font: { size: 10 }, color: '#aaa' }
+            }
+        },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false }
+    }
+});
+</script>
+
+</body>
+</html>

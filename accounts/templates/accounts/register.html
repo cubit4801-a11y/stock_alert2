@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Alert - Register</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+</head>
+<body>
+  <div class="container">
+
+    <div class="logo">
+      <h1>📈 NEPSE Alert</h1>
+      <p>Nepal Stock Exchange · Price Alerts</p>
+    </div>
+
+    <h2>Create Account</h2>
+
+    {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">Register</button>
+    </form>
+
+    <div class="link">
+      <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Alert</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: #0a0f1e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .modal {
+            background: #1a1f35;
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.08);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header h2 {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 6px 0;
+        }
+        .modal-header p {
+            color: rgba(255,255,255,0.45);
+            font-size: 13px;
+            margin: 0 0 24px 0;
+        }
+        .form-group { margin-bottom: 18px; }
+        .form-group label {
+            display: block;
+            color: rgba(255,255,255,0.8);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        select, input[type="number"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: #252b45;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border 0.2s;
+        }
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #4a7fff;
+            box-shadow: 0 0 0 3px rgba(74,127,255,0.15);
+        }
+        select option { background: #252b45; color: white; }
+        textarea { resize: vertical; min-height: 80px; }
+        .ltp-badge {
+            display: inline-block;
+            background: rgba(74,127,255,0.15);
+            color: #4a7fff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .comparison-box {
+            background: #252b45;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-top: 10px;
+            display: none;
+        }
+        .comparison-title {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .comparison-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .comparison-label { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .comparison-value { font-size: 14px; font-weight: 700; color: white; }
+        .comparison-divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            margin: 8px 0;
+        }
+        .trigger-condition {
+            font-size: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+        .trigger-above {
+            background: rgba(34,197,94,0.1);
+            color: #4ade80;
+            border: 1px solid rgba(34,197,94,0.2);
+        }
+        .trigger-below {
+            background: rgba(239,68,68,0.1);
+            color: #f87171;
+            border: 1px solid rgba(239,68,68,0.2);
+        }
+        .trigger-immediate {
+            background: rgba(251,191,36,0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(251,191,36,0.2);
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .btn {
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+        .btn-primary { background: #4a7fff; color: white; }
+        .btn-secondary {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.7);
+        }
+        .messages { margin-bottom: 16px; }
+        .message-error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #f87171;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .message-success {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.3);
+            color: #4ade80;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal">
+        <div class="modal-header">
+            <h2>🔔 Create Stock Alert</h2>
+            <p>Get notified when your stock hits the target price</p>
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {{ stock_data_json|safe }}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label>Stock Symbol</label>
+                {{ form.stock_symbol }}
+            </div>
+
+            <div class="form-group">
+                <label>Stock Name</label>
+                {{ form.stock_name }}
+            </div>
+
+            <div id="ltp-display" class="ltp-badge" style="display:none;">
+                Current LTP: <span id="ltp-value">-</span>
+            </div>
+
+            <div class="form-group" style="margin-top:16px;">
+                <label>Alert Type</label>
+                {{ form.alert_type }}
+            </div>
+
+            <div class="form-group" id="target-price-group">
+                <label>Target Price (Rs.)</label>
+                {{ form.target_price }}
+            </div>
+
+            <div class="form-group" id="price-high-group" style="display:none;">
+                <label>High Price (Rs.)</label>
+                {{ form.price_high }}
+            </div>
+
+            <div class="form-group" id="price-low-group" style="display:none;">
+                <label>Low Price (Rs.)</label>
+                {{ form.price_low }}
+            </div>
+
+            <div class="comparison-box" id="comparison-box">
+                <div class="comparison-title">PRICE COMPARISON</div>
+                <div class="comparison-row">
+                    <span class="comparison-label">Current LTP</span>
+                    <span class="comparison-value" id="cmp-ltp">-</span>
+                </div>
+                <div class="comparison-row">
+                    <span class="comparison-label">Your Target</span>
+                    <span class="comparison-value" id="cmp-target">-</span>
+                </div>
+                <hr class="comparison-divider">
+                <div id="trigger-msg" class="trigger-condition"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Notes (optional)</label>
+                {{ form.notes }}
+            </div>
+
+            <div class="btn-grid">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Alert</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const dataEl = document.getElementById('stock-data-json');
+        const stockData = dataEl ? JSON.parse(dataEl.textContent) : {};
+
+        const symbolSelect = document.getElementById('id_stock_symbol');
+        const nameInput = document.getElementById('id_stock_name');
+        const ltpDisplay = document.getElementById('ltp-display');
+        const ltpValue = document.getElementById('ltp-value');
+        const alertTypeEl = document.getElementById('id_alert_type');
+        const targetGroup = document.getElementById('target-price-group');
+        const highGroup = document.getElementById('price-high-group');
+        const lowGroup = document.getElementById('price-low-group');
+        const targetInput = document.getElementById('id_target_price');
+        const compBox = document.getElementById('comparison-box');
+        const cmpLtp = document.getElementById('cmp-ltp');
+        const cmpTarget = document.getElementById('cmp-target');
+        const triggerMsg = document.getElementById('trigger-msg');
+
+        let currentLtp = 0;
+
+        function updateStock() {
+            const symbol = symbolSelect.value;
+            if (symbol && stockData[symbol]) {
+                const data = stockData[symbol];
+                nameInput.value = data.name;
+                currentLtp = data.ltp;
+                ltpValue.textContent = 'Rs. ' + data.ltp;
+                ltpDisplay.style.display = 'inline-block';
+            } else {
+                currentLtp = 0;
+                ltpDisplay.style.display = 'none';
+                compBox.style.display = 'none';
+            }
+            updateComparison();
+        }
+
+        function updateAlertType() {
+            const type = alertTypeEl.value;
+            if (type === 'between') {
+                targetGroup.style.display = 'none';
+                highGroup.style.display = 'block';
+                lowGroup.style.display = 'block';
+                compBox.style.display = 'none';
+            } else {
+                targetGroup.style.display = 'block';
+                highGroup.style.display = 'none';
+                lowGroup.style.display = 'none';
+                updateComparison();
+            }
+        }
+
+        function updateComparison() {
+            const target = parseFloat(targetInput ? targetInput.value : 0);
+            const type = alertTypeEl.value;
+            if (!currentLtp || !target || type === 'between') {
+                compBox.style.display = 'none';
+                return;
+            }
+            compBox.style.display = 'block';
+            cmpLtp.textContent = 'Rs. ' + currentLtp;
+            cmpTarget.textContent = 'Rs. ' + target;
+
+            if (type === 'above') {
+                if (target <= currentLtp) {
+                    triggerMsg.className = 'trigger-condition trigger-immediate';
+                    triggerMsg.textContent = 'WARNING: Price already above target — alert triggers immediately!';
+                } else {
+                    triggerMsg.className = 'trigger-condition trigger-above';
+                    triggerMsg.textContent = 'Alert triggers when price rises to Rs. ' + target;
+                }
+            } else if (type === 'below') {
+                if (target >= currentLtp) {
+                    triggerMsg.className = 'trigger-condition trigger-immediate';
+                    triggerMsg.textContent = 'WARNING: Price already below target — alert triggers immediately!';
+                } else {
+                    triggerMsg.className = 'trigger-condition trigger-below';
+                    triggerMsg.textContent = 'Alert triggers when price drops to Rs. ' + target;
+                }
+            }
+        }
+
+        if (symbolSelect) symbolSelect.addEventListener('change', updateStock);
+        if (alertTypeEl) alertTypeEl.addEventListener('change', updateAlertType);
+        if (targetInput) targetInput.addEventListener('input', updateComparison);
+
+        updateStock();
+        updateAlertType();
+    </script>
+</body>
+</html>

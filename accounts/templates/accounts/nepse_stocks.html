@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NEPSE Stock Prices</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <style>
+        body {
+            display: block;
+            padding: 20px;
+            background: linear-gradient(135deg, #0a2463, #1e5799, #2980b9);
+            min-height: 100vh;
+        }
+        .page-container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #0a2463, #1e5799);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 22px;
+            color: white;
+        }
+        .header p {
+            color: rgba(255,255,255,0.7);
+            font-size: 13px;
+            margin: 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 10px;
+        }
+        .nav-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        .market-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .status-dot.open {
+            background: #00a651;
+        }
+        .status-dot.closed {
+            background: #cc0000;
+        }
+        .status-text.open {
+            color: #00a651;
+        }
+        .status-text.closed {
+            color: #cc0000;
+        }
+        .total-stocks {
+            font-size: 13px;
+            color: #666;
+        }
+        .search-box {
+            width: 100%;
+            padding: 12px 18px;
+            border: 1px solid #1e5799;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #0a2463;
+            margin-bottom: 15px;
+            background: white;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #0a2463;
+            box-shadow: 0 0 10px rgba(10,36,99,0.15);
+        }
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead {
+            background: linear-gradient(135deg, #0a2463, #1e5799);
+            color: white;
+        }
+        thead th {
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        tbody tr {
+            border-bottom: 1px solid #f0f5ff;
+            transition: background 0.2s;
+        }
+        tbody tr:hover {
+            background: #f0f5ff;
+        }
+        tbody td {
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #333;
+        }
+        .symbol-badge {
+            background: #e6f0ff;
+            color: #0a2463;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 12px;
+        }
+        .price-up {
+            color: #00a651;
+            font-weight: 700;
+        }
+        .price-down {
+            color: #cc0000;
+            font-weight: 700;
+        }
+        .price-neutral {
+            color: #333;
+            font-weight: 700;
+        }
+        .set-alert-btn {
+            background: linear-gradient(135deg, #0a2463, #1e5799);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .set-alert-btn:hover {
+            background: linear-gradient(135deg, #1e5799, #2980b9);
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+<div class="page-container">
+
+    <div class="header">
+        <div>
+            <h1>📈 NEPSE Live Stock Prices</h1>
+            <p>Real time data from Nepal Stock Exchange</p>
+        </div>
+        <div class="nav-links">
+            <a href="{% url 'dashboard' %}" class="nav-btn">Dashboard</a>
+            <a href="{% url 'logout' %}" class="nav-btn">Logout</a>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div class="market-status">
+            <div class="status-dot {% if is_open %}open{% else %}closed{% endif %}"></div>
+            <span class="status-text {% if is_open %}open{% else %}closed{% endif %}">
+                Market is {% if is_open %}OPEN{% else %}CLOSED{% endif %}
+            </span>
+        </div>
+        <div class="total-stocks">
+            Showing {{ total }} stocks listed in NEPSE
+        </div>
+    </div>
+
+    <form method="GET">
+        <input
+            type="text"
+            name="search"
+            class="search-box"
+            placeholder="🔍 Search by symbol or company name... (e.g. NABIL, Upper, Hydro)"
+            value="{{ search }}"
+        />
+    </form>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Symbol</th>
+                    <th>Company Name</th>
+                    <th>Close Price</th>
+                    <th>Open</th>
+                    <th>High</th>
+                    <th>Low</th>
+                    <th>Prev Close</th>
+                    <th>Change</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if stocks %}
+                    {% for stock in stocks %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td><span class="symbol-badge">{{ stock.symbol }}</span></td>
+                        <td>{{ stock.securityName }}</td>
+                        <td>
+                            {% if stock.closePrice > stock.previousDayClosePrice %}
+                                <span class="price-up">NPR {{ stock.closePrice }}</span>
+                            {% elif stock.closePrice < stock.previousDayClosePrice %}
+                                <span class="price-down">NPR {{ stock.closePrice }}</span>
+                            {% else %}
+                                <span class="price-neutral">NPR {{ stock.closePrice }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ stock.openPrice }}</td>
+                        <td>{{ stock.highPrice }}</td>
+                        <td>{{ stock.lowPrice }}</td>
+                        <td>{{ stock.previousDayClosePrice }}</td>
+                        <td>
+                            {% if stock.closePrice > stock.previousDayClosePrice %}
+                                <span class="price-up">▲</span>
+                            {% elif stock.closePrice < stock.previousDayClosePrice %}
+                                <span class="price-down">▼</span>
+                            {% else %}
+                                <span>—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'add_alert' %}?symbol={{ stock.symbol }}&name={{ stock.securityName }}&price={{ stock.closePrice }}" class="set-alert-btn">
+                                Set Alert
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="10">
+                            <div class="no-results">
+                                No stocks found matching your search.
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</body>
+</html>
