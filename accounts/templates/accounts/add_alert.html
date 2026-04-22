@@ -299,34 +299,46 @@
         }
 
         function updateComparison() {
-            const target = parseFloat(targetInput ? targetInput.value : 0);
-            const type = alertTypeEl.value;
-            if (!currentLtp || !target || type === 'between') {
-                compBox.style.display = 'none';
-                return;
-            }
-            compBox.style.display = 'block';
-            cmpLtp.textContent = 'Rs. ' + currentLtp;
-            cmpTarget.textContent = 'Rs. ' + target;
+    const target = parseFloat(targetInput ? targetInput.value : 0);
+    const type = alertTypeEl.value;
 
-            if (type === 'above') {
-                if (target <= currentLtp) {
-                    triggerMsg.className = 'trigger-condition trigger-immediate';
-                    triggerMsg.textContent = 'WARNING: Price already above target — alert triggers immediately!';
-                } else {
-                    triggerMsg.className = 'trigger-condition trigger-above';
-                    triggerMsg.textContent = 'Alert triggers when price rises to Rs. ' + target;
-                }
-            } else if (type === 'below') {
-                if (target >= currentLtp) {
-                    triggerMsg.className = 'trigger-condition trigger-immediate';
-                    triggerMsg.textContent = 'WARNING: Price already below target — alert triggers immediately!';
-                } else {
-                    triggerMsg.className = 'trigger-condition trigger-below';
-                    triggerMsg.textContent = 'Alert triggers when price drops to Rs. ' + target;
-                }
-            }
+    // ✅ ADD THESE LINES HERE
+    if (target <= 0) {
+        compBox.style.display = 'block';
+        cmpLtp.textContent = 'Rs. ' + currentLtp;
+        cmpTarget.textContent = 'Rs. ' + target;
+        triggerMsg.className = 'trigger-condition trigger-immediate';
+        triggerMsg.textContent = '❌ Invalid! Target price must be greater than 0';
+        return;
+    }
+
+    if (!currentLtp || !target || type === 'between') {
+        compBox.style.display = 'none';
+        return;
+    }
+
+    compBox.style.display = 'block';
+    cmpLtp.textContent = 'Rs. ' + currentLtp;
+    cmpTarget.textContent = 'Rs. ' + target;
+
+    if (type === 'above') {
+        if (target <= currentLtp) {
+            triggerMsg.className = 'trigger-condition trigger-immediate';
+            triggerMsg.textContent = 'WARNING: Price already above target — alert triggers immediately!';
+        } else {
+            triggerMsg.className = 'trigger-condition trigger-above';
+            triggerMsg.textContent = 'Alert triggers when price rises to Rs. ' + target;
         }
+    } else if (type === 'below') {
+        if (target >= currentLtp) {
+            triggerMsg.className = 'trigger-condition trigger-immediate';
+            triggerMsg.textContent = 'WARNING: Price already below target — alert triggers immediately!';
+        } else {
+            triggerMsg.className = 'trigger-condition trigger-below';
+            triggerMsg.textContent = 'Alert triggers when price drops to Rs. ' + target;
+        }
+    }
+}
 
         if (symbolSelect) symbolSelect.addEventListener('change', updateStock);
         if (alertTypeEl) alertTypeEl.addEventListener('change', updateAlertType);

@@ -2,10 +2,8 @@ name: NEPSE Alert Checker
 
 on:
   schedule:
-    # Runs every 30 minutes Monday to Friday
-    # Nepal time is UTC+5:45 so market hours 11AM-3PM NST = 5:15AM-9:15AM UTC
-    - cron: '*/30 5-9 * * 1-5'
-  workflow_dispatch:  # Also allows manual trigger from GitHub
+    - cron: '*/5 5-9 * * 1-5'
+  workflow_dispatch:
 
 jobs:
   check-alerts:
@@ -23,13 +21,19 @@ jobs:
       - name: Install dependencies
         run: |
           pip install django
-          pip install nepse_scraper
+          pip install git+https://github.com/basic-bgnr/NepseUnofficialApi@2f09fbfdcbaf23545d5755b6f11b367324d5b8a4
           pip install pytz
+
+      - name: Run migrations
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DJANGO_SETTINGS_MODULE: stock_alert2.settings
+        run: python manage.py migrate
 
       - name: Run alert checker
         env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
           EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
           EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
           DJANGO_SETTINGS_MODULE: stock_alert2.settings
-        run: |
-          python manage.py check_alerts
+        run: python manage.py check_alerts

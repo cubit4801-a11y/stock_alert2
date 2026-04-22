@@ -4,8 +4,8 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib import messages
 from django.utils import timezone
 from .forms import RegisterForm, StockAlertForm
@@ -163,13 +163,19 @@ def add_alert_view(request):
             stock_choices=stock_choices
         )
 
-    stock_data_json = '<script id="stock-data-json" type="application/json">' + json.dumps(stock_data) + '</script>'
+    stock_data_json = (
+        '<script id="stock-data-json" type="application/json">'
+        + json.dumps(stock_data)
+        + '</script>'
+    )
 
     return render(request, 'accounts/add_alert.html', {
         'form': form,
         'stock_data': stock_data,
         'stock_data_json': stock_data_json,
     })
+
+
 # ---- NEPSE STOCKS VIEW ----
 @login_required
 def nepse_stocks_view(request):
@@ -190,6 +196,8 @@ def nepse_stocks_view(request):
         'search': search,
         'total': len(stocks)
     })
+
+
 # ---- DELETE ALERT VIEW ----
 @login_required
 def delete_alert_view(request, alert_id):
@@ -199,23 +207,45 @@ def delete_alert_view(request, alert_id):
     return redirect('dashboard')
 
 
-# ---- NEPSE STOCKS VIEW ----
+# ---- PROFILE VIEW ----
 @login_required
-def nepse_stocks_view(request):
-    try:
-        stocks = get_all_stocks()
-        is_open = get_market_status()
-    except Exception:
-        stocks = []
-        is_open = False
-    search = request.GET.get('search', '')
-    if search:
-        stocks = [s for s in stocks if
-                  search.upper() in s['symbol'] or
-                  search.upper() in s['securityName'].upper()]
-    return render(request, 'accounts/nepse_stocks.html', {
-        'stocks': stocks,
-        'is_open': is_open,
-        'search': search,
-        'total': len(stocks)
+def profile_view(request):
+    user = request.user
+    alerts = StockAlert.objects.filter(user=user)
+
+    total_alerts = alerts.count()
+    active_alerts = alerts.filter(status='active').count()
+    triggered_alerts = alerts.filter(status='triggered').count()
+
+    password_form = PasswordChangeForm(user)
+
+    if request.method == 'POST':
+
+        if 'change_password' in request.POST:
+            password_form = PasswordChangeForm(user, request.POST)
+            if password_form.is_valid():
+                updated_user = password_form.save()
+                # Keep user logged in after password change
+                update_session_auth_hash(request, updated_user)
+                messages.success(request, '✅ Password changed successfully!')
+                return redirect('profile')
+            else:
+                messages.error(request, 'Please fix the password errors below.')
+
+        elif 'update_profile' in request.POST:
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            user.first_name = first_name
+            user.last_name = last_name
+            user.save(update_fields=['first_name', 'last_name'])
+            messages.success(request, '✅ Profile updated successfully!')
+            return redirect('profile')
+
+    return render(request, 'accounts/profile.html', {
+        'user': user,
+        'alerts': alerts,
+        'total_alerts': total_alerts,
+        'active_alerts': active_alerts,
+        'triggered_alerts': triggered_alerts,
+        'password_form': password_form,
     })
